@@ -1,0 +1,30 @@
+# Secrets: never commit credentials
+.env
+.env.*
+!.env.example
+profiles.yml
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# dbt generated files
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+
+# Airflow local runtime
+airflow/logs/
+
+# Raw data: never commit (API licence). Small samples go in tests/fixtures/
+data/
+*.parquet
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
