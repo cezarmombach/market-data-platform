@@ -51,7 +51,7 @@ Raw data is not committed to this repository. See
 ## Roadmap
 
 - [x] 1. API tests and scope
-- [ ] 2. Repository, folder structure and environment
+- [x] 2. Repository, folder structure and environment
 - [ ] 3. Python extraction (retry and tests)
 - [ ] 4. Landing and incremental bronze
 - [ ] 5. Silver with MERGE and deduplication
