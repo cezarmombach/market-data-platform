@@ -1,4 +1,5 @@
 """Extract several pairs one at a time: a failure in one pair never stops the others."""
+import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -11,6 +12,8 @@ from market_data.extract import (
     find_missing_candles,
     write_landing_file,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -58,5 +61,7 @@ def extract_pairs(
         try:
             results.append(extract(product_id, start, end, base_dir, ingested_at, sleep=sleep))
         except Exception as error:  # isolate any failure to this pair
+            # Keep the full traceback in the log, so a bug in our code can be located later
+            logger.exception("extraction failed for %s", product_id)
             results.append(PairResult(product_id, error=f"{type(error).__name__}: {error}"))
     return results
