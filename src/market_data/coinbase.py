@@ -5,10 +5,9 @@ from datetime import UTC, datetime, timedelta
 
 import requests
 
+from market_data.http import get_json_with_retry
+
 BASE_URL = "https://api.exchange.coinbase.com"
-HEADERS = {"User-Agent": "market-data-platform/0.1"}
-# Temporary problems worth retrying: rate limit (429) and server errors (5xx)
-RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
@@ -41,36 +40,14 @@ def fetch_candles_window(
     get: Callable = requests.get,
     sleep: Callable[[float], None] = time.sleep,
 ) -> list[list]:
-    """Fetch the raw candles of one window, retrying temporary failures.
-
-    `get` and `sleep` can be replaced in tests, so no real network or waiting is needed.
-    """
-    if max_attempts < 1:
-        raise ValueError("max_attempts must be at least 1")
-
+    """Fetch the raw candles of one window, retrying temporary failures (see http.py)."""
     url = f"{BASE_URL}/products/{product_id}/candles"
     params = build_candles_params(window_start, window_end, granularity_seconds)
-
-    for attempt in range(1, max_attempts + 1):
-        is_last_attempt = attempt == max_attempts
-        # Exponential backoff: wait 1s, then 2s, then 4s... (gives the server time to recover)
-        wait_seconds = backoff_seconds * 2 ** (attempt - 1)
-
-        try:
-            response = get(url, params=params, headers=HEADERS, timeout=15)
-        except (requests.ConnectionError, requests.Timeout):
-            if is_last_attempt:
-                raise
-            sleep(wait_seconds)
-            continue
-
-        if response.status_code in RETRYABLE_STATUS and not is_last_attempt:
-            sleep(wait_seconds)
-            continue
-
-        # Other errors (404, 400...) will not fix themselves: raise right away.
-        # A 429/5xx on the last attempt also raises here.
-        response.raise_for_status()
-        return response.json()
-
-    raise RuntimeError("unreachable: the loop always returns or raises")
+    return get_json_with_retry(
+        url,
+        params,
+        max_attempts=max_attempts,
+        backoff_seconds=backoff_seconds,
+        get=get,
+        sleep=sleep,
+    )
